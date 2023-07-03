@@ -30,12 +30,18 @@ namespace Crawling.Crawlers.GrowthSupplements
             var url = $"{BASE_URL}/{request.ProductId}";
             await page.GoToAsync(url, TimeSpan.FromSeconds(60).Milliseconds, new[] { WaitUntilNavigation.DOMContentLoaded });
 
-            if (await page.QuerySelectorAsync(".botaoComprar") != null)
+            string title = await TryGetProductTitle(page, request.ProductId);
+
+            if (await ProductIdAvailableAsync(page))
             {
                 _logger.LogInformation("Product {productId} is available.", request.ProductId);
-
-                string title = await TryGetProductTitle(page, request.ProductId);
                 return new NotificationMessage($"'{title}' is available. {url}");
+            }
+
+            if (!(await EnsuresProductIdUnavailableAsync(page)))
+            {
+                _logger.LogWarning("Impossible to know whether the product '{productId}' is available. Maybe DOM changed?.", request.ProductId);
+                return new NotificationMessage($"Impossible to know whether the product '{title}' is available. Maybe DOM changed?. {url}");
             }
 
             _logger.LogInformation("Product {productId} is unavailable.", request.ProductId);
@@ -60,6 +66,16 @@ namespace Crawling.Crawlers.GrowthSupplements
                 _logger.LogError(ex, "An error accourred while accessing the product title.");
                 return defaultValue;
             }
+        }
+
+        async Task<bool> ProductIdAvailableAsync(IPage page)
+        {
+            return await page.QuerySelectorAsync(".botaoComprar") != null;
+        }
+
+        async Task<bool> EnsuresProductIdUnavailableAsync(IPage page)
+        {
+            return await page.QuerySelectorAsync(".btIndisponivel") != null;
         }
     }
 }
