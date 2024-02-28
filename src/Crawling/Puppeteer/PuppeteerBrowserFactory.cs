@@ -36,6 +36,10 @@ namespace Crawling.Puppeteer
                 };
             }
 
+#if DEBUG
+            launchOptions.Headless = false;
+#endif
+
             return await PuppeteerSharp.Puppeteer.LaunchAsync(launchOptions);
         }
     }
