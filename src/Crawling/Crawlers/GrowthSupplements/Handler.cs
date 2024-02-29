@@ -26,19 +26,31 @@ namespace Crawling.Crawlers.GrowthSupplements
 
             await using var browser = await _puppeteerBrowserFactory.CreateAsync();
 
-            var page = await browser.NewPageAsync();
+            using var page = await browser.NewPageAsync();
             var url = $"{BASE_URL}/{request.ProductId}";
-            await page.GoToAsync(url, TimeSpan.FromSeconds(60).Milliseconds, new[] { WaitUntilNavigation.DOMContentLoaded });
+            await page.GoToAsync(url, TimeSpan.FromSeconds(60).Milliseconds, [WaitUntilNavigation.DOMContentLoaded]);
 
             string title = await TryGetProductTitle(page, request.ProductId);
 
-            if (await ProductIdAvailableAsync(page))
+            if (await ProductIsAvailableAsync(page))
             {
                 _logger.LogInformation("Product {productId} is available.", request.ProductId);
-                return new NotificationMessage($"'{title}' is available. {url}");
+
+                if (request.Sku != null)
+                {
+                    _logger.LogInformation("Checking {sku} if is available....", request.Sku);
+                    if (await SkuIsAvailableAsync(page, request.Sku))
+                    {
+                        _logger.LogInformation("SKU {sku} is available.", request.Sku);
+                        return new NotificationMessage($"'{title}' - '{request.Sku}' is available. {url}");
+                    }
+                    else return null;
+                }
+                
+                return new NotificationMessage($"'{title}' is available. {url}"); 
             }
 
-            if (!(await EnsuresProductIdUnavailableAsync(page)))
+            if (!await EnsuresProductIdUnavailableAsync(page))
             {
                 _logger.LogWarning("Impossible to know whether the product '{productId}' is available. Maybe DOM changed?.", request.ProductId);
                 return new NotificationMessage($"Impossible to know whether the product '{title}' is available. Maybe DOM changed?. {url}");
@@ -68,9 +80,22 @@ namespace Crawling.Crawlers.GrowthSupplements
             }
         }
 
-        async Task<bool> ProductIdAvailableAsync(IPage page)
+        async Task<bool> ProductIsAvailableAsync(IPage page)
         {
             return await page.QuerySelectorAsync(".botaoComprar") != null;
+        }
+
+        async Task<bool> SkuIsAvailableAsync(IPage page, string sku)
+        {
+            var optionsElements = await page.QuerySelectorAllAsync("option:not([disabled])");
+            foreach (var optionsElement in optionsElements)
+            {
+                var text = await page.EvaluateFunctionAsync<string>("(elem) => elem.innerText", optionsElement);
+                if (text.Equals(sku, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
         }
 
         async Task<bool> EnsuresProductIdUnavailableAsync(IPage page)
