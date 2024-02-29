@@ -19,22 +19,27 @@ namespace Crawling
 
         public async Task RunAsync(string[] args, CancellationToken cancellationToken)
         {
-            var message = args switch
+            Func<string[], object?>[] commandFactories = [
+                Crawlers.GrowthSupplements.Command.Create
+            ];
+
+            var commands = commandFactories
+                .Select(factory => factory.Invoke(args))
+                .Where(command => command != null)
+                .ToList();
+
+            if (commands.Count == 0)
             {
-                [var name, var productId] when name == nameof(Crawlers.GrowthSupplements) =>
-                    await _mediator.Send(new Crawlers.GrowthSupplements.Command(productId), cancellationToken),
+                _logger.LogError("No Crawlers was found");
+                return;
+            }
 
-                _ => InvalidArgs()
-            };
-
-            if (message != null)
-                await _notification.SendAsync(message, cancellationToken);
-        }
-
-        NotificationMessage? InvalidArgs()
-        {
-            _logger.LogError("No Crawlers was found");
-            return null;
+            foreach (var command in commands)
+            {
+                var result = await _mediator.Send(command!, cancellationToken);
+                if (result is not null && result is NotificationMessage message)
+                    await _notification.SendAsync(message, cancellationToken);
+            }
         }
     }
 }
