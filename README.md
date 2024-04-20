@@ -23,6 +23,14 @@ Verify if the product is available.
 crawling GrowthSupplements <product_id>
 ```
 
+### Caesb Crawler
+
+Verify lack of water in neighborhood.
+
+```bash
+crawling Caesb <neighborhood>
+```
+
 # Getting Started
 
 Create `appsettings.local.json` file as below:
