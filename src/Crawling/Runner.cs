@@ -4,23 +4,17 @@ using Microsoft.Extensions.Logging;
 
 namespace Crawling
 {
-    internal class Runner
+    internal class Runner(IMediator mediator, INotifier notification, ILogger<Runner> logger)
     {
-        readonly IMediator _mediator;
-        readonly INotifier _notification;
-        readonly ILogger _logger;
-
-        public Runner(IMediator mediator, INotifier notification, ILogger<Runner> logger)
-        {
-            _mediator = mediator;
-            _notification = notification;
-            _logger = logger;
-        }
+        readonly IMediator _mediator = mediator;
+        readonly INotifier _notification = notification;
+        readonly ILogger _logger = logger;
 
         public async Task RunAsync(string[] args, CancellationToken cancellationToken)
         {
             Func<string[], object?>[] commandFactories = [
-                Crawlers.GrowthSupplements.Command.Create
+                Crawlers.GrowthSupplements.Command.Create,
+                Crawlers.Caesb.Command.Create,
             ];
 
             var commands = commandFactories
