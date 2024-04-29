@@ -100,7 +100,7 @@ namespace Crawling.Crawlers.GrowthSupplements
 
         async Task<bool> EnsuresProductIdUnavailableAsync(IPage page)
         {
-            return await page.QuerySelectorAsync(".btIndisponivel") != null;
+            return await page.QuerySelectorAsync(".indisponivel") != null;
         }
     }
 }
