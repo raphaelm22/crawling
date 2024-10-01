@@ -1,5 +1,5 @@
 FROM mcr.microsoft.com/dotnet/runtime:8.0-bookworm-slim AS base
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update -qq
 RUN apt install -qq -y chromium
 RUN rm -rf /var/lib/apt/lists/*

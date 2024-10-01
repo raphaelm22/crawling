@@ -29,28 +29,29 @@ namespace Crawling.Crawlers.GrowthSupplements
             using var page = await browser.NewPageAsync();
             var url = $"{BASE_URL}/{request.ProductId}";
             await page.GoToAsync(url, TimeSpan.FromSeconds(60).Milliseconds, [WaitUntilNavigation.DOMContentLoaded]);
+            await page.WaitForSelectorAsync("main[itemprop=\"itemReviewed\"]:not([data-fetch-key])", new() { Timeout = 30_000, Visible = true });
 
             string title = await TryGetProductTitle(page, request.ProductId);
 
-            if (await ProductIsAvailableAsync(page))
+            if (await IsProductAvailableAsync(page))
             {
                 _logger.LogInformation("Product {productId} is available.", request.ProductId);
 
                 if (request.Sku != null)
                 {
                     _logger.LogInformation("Checking {sku} if is available....", request.Sku);
-                    if (await SkuIsAvailableAsync(page, request.Sku))
+                    if (await IsSkuAvailableAsync(page, request.Sku))
                     {
                         _logger.LogInformation("SKU {sku} is available.", request.Sku);
                         return new NotificationMessage($"'{title}' - '{request.Sku}' is available. {url}");
                     }
                     else return null;
                 }
-                
-                return new NotificationMessage($"'{title}' is available. {url}"); 
+
+                return new NotificationMessage($"'{title}' is available. {url}");
             }
 
-            if (!await EnsuresProductIdUnavailableAsync(page))
+            if (!await EnsuresProductIsUnavailableAsync(page))
             {
                 _logger.LogWarning("Impossible to know whether the product '{productId}' is available. Maybe DOM changed?.", request.ProductId);
                 return new NotificationMessage($"Impossible to know whether the product '{title}' is available. Maybe DOM changed?. {url}");
@@ -80,25 +81,31 @@ namespace Crawling.Crawlers.GrowthSupplements
             }
         }
 
-        async Task<bool> ProductIsAvailableAsync(IPage page)
+        async Task<bool> IsProductAvailableAsync(IPage page)
         {
             return await page.QuerySelectorAsync(".botaoComprar") != null;
         }
 
-        async Task<bool> SkuIsAvailableAsync(IPage page, string sku)
+        async Task<bool> IsSkuAvailableAsync(IPage page, string sku)
         {
-            var optionsElements = await page.QuerySelectorAllAsync("option:not([disabled])");
-            foreach (var optionsElement in optionsElements)
+            var priceSelector = await page.QuerySelectorAsync(".attrSimples__attrSelecionado");
+            await page.EvaluateFunctionAsync<string>("(elem) => elem.click()", priceSelector);
+
+            var options = await page.QuerySelectorAllAsync(".attrSimples__attrNaoSelecionado li span");
+            foreach (var option in options)
             {
-                var text = await page.EvaluateFunctionAsync<string>("(elem) => elem.innerText", optionsElement);
-                if (text.Equals(sku, StringComparison.OrdinalIgnoreCase))
+                var text = await page.EvaluateFunctionAsync<string>("(elem) => elem.innerText", option);
+                if (text.StartsWith(sku, StringComparison.OrdinalIgnoreCase) &&
+                    !text.Contains("Indisponível", StringComparison.OrdinalIgnoreCase)
+                )
                     return true;
             }
 
             return false;
+           
         }
 
-        async Task<bool> EnsuresProductIdUnavailableAsync(IPage page)
+        async Task<bool> EnsuresProductIsUnavailableAsync(IPage page)
         {
             return await page.QuerySelectorAsync(".indisponivel") != null;
         }

@@ -16,24 +16,25 @@ namespace Crawling.Puppeteer
 
         public async Task<IBrowser> CreateAsync()
         {
-            LaunchOptions launchOptions;
+            var launchOptions = new LaunchOptions() { Headless = true };
             if (string.IsNullOrWhiteSpace(_options.ExecutablePath))
             {
-                using var browserFetcher = new BrowserFetcher();
+                var browserFetcher = new BrowserFetcher();
 
                 _logger.LogInformation("Starting the download of Puppeteer Browser...");
                 await browserFetcher.DownloadAsync();
                 _logger.LogInformation("Download finished");
-
-                launchOptions = new();
             }
             else
             {
-                launchOptions = new()
-                {
-                    ExecutablePath = _options.ExecutablePath,
-                    Args = _options.Args
-                };
+                _logger.LogTrace(
+                    "Lauching browser {bin} {args}", 
+                    _options.ExecutablePath, 
+                    string.Join(" ", _options.Args)
+                );
+
+                launchOptions.ExecutablePath = _options.ExecutablePath;
+                launchOptions.Args = _options.Args;
             }
 
 #if DEBUG

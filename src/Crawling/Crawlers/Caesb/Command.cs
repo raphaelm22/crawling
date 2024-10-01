@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Crawling.Crawlers.Caesb
 {
-    internal record Command(string NeighborhoodName) : IRequest<NotificationMessage?>
+    internal record Command(string DistrictName) : IRequest<NotificationMessage?>
     {
         public static object? Create(string[] args) => args switch
         {
