@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/runtime:8.0-bookworm-slim AS base
+FROM mcr.microsoft.com/dotnet/runtime:9.0-bookworm-slim AS base
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update -qq
 RUN apt install -qq -y chromium
@@ -6,7 +6,7 @@ RUN rm -rf /var/lib/apt/lists/*
 RUN rm -rf /src/*.deb
 RUN apt clean
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0-bookworm-slim AS build
 COPY src/*/*.csproj ./
 
 RUN for file in $(ls *.csproj); do \

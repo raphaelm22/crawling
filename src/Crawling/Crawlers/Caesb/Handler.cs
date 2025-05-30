@@ -42,7 +42,7 @@ namespace Crawling.Crawlers.Caesb
                     $"""
                     [...(
                         Array.from(document.querySelectorAll('td'))
-                            .find(el => el.textContent === '{districtName}')?.parentElement?.getElementsByTagName("td") || []
+                            .find(el => el.textContent.includes('{districtName}'))?.parentElement?.getElementsByTagName("td") || []
                         )
                     ].map(el => el.innerText) 
                     """
