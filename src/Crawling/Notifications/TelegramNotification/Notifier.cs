@@ -19,7 +19,7 @@ namespace Crawling.Notifications.TelegramNotification
             _logger.LogInformation("Sending message: {message}", message.Text);
 
             var bot = new TelegramBotClient(_options.Token);
-            await bot.SendTextMessageAsync(_options.ChatId, message.Text, cancellationToken: cancellationToken);
+            await bot.SendMessage(_options.ChatId, message.Text, cancellationToken: cancellationToken);
         }
     }
 }
